@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Cartera 2025-2026</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/recharts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8f9fa;
+            color: #1f2937;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            margin-bottom: 24px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+        
+        .header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 0.5px solid #d1d5db;
+            background: white;
+            color: #1f2937;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        
+        .btn.active {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        
+        .btn.reset {
+            margin-left: auto;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            border: 0.5px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: grab;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .metric-card:active {
+            cursor: grabbing;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card.success {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .metric-value.primary {
+            color: #3b82f6;
+        }
+        
+        .metric-value.success {
+            color: #16a34a;
+        }
+        
+        .metric-value.secondary {
+            color: #6b7280;
+        }
+        
+        .chart-card {
+            background: white;
+            border: 0.5px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-card h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        thead {
+            border-bottom: 0.5px solid #d1d5db;
+        }
+        
+        th {
+            text-align: left;
+            padding: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 0.5px solid #e5e7eb;
+        }
+        
+        td:last-child {
+            text-align: right;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script>
+        const { useState } = React;
+        const { LineChart, Line, BarChart, Bar, AreaChart, Area, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } = window.recharts;
+        
+        const DashboardCartera = () => {
+            const [selectedView, setSelectedView] = useState('overview');
+            const [cardPositions, setCardPositions] = useState({
+                metrics: { x: 0, y: 0 },
+                comparativo: { x: 0, y: 0 },
+                crecimiento: { x: 0, y: 0 },
+                distribucion: { x: 0, y: 0 }
+            });
+            
+            const [dragState, setDragState] = useState(null);
+            
+            const monthlyData = [
+                { mes: 'Ene', '2025': 45000, '2026': 62000, meta: 60000 },
+                { mes: 'Feb', '2025': 52000, '2026': 71000, meta: 65000 },
+                { mes: 'Mar', '2025': 48000, '2026': 68000, meta: 62000 },
+                { mes: 'Abr', '2025': 61000, '2026': 79000, meta: 75000 },
+                { mes: 'May', '2025': 55000, '2026': 85000, meta: 80000 }
+            ];
+            
+            const productosData = [
+                { producto: 'Producto A', '2025': 180000, '2026': 245000 },
+                { producto: 'Producto B', '2025': 150000, '2026': 210000 },
+                { producto: 'Producto C', '2025': 120000, '2026': 185000 },
+                { producto: 'Producto D', '2025': 95000, '2026': 155000 }
+            ];
+            
+            const distribucionData = [
+                { name: 'Producto A', value: 245000 },
+                { name: 'Producto B', value: 210000 },
+                { name: 'Producto C', value: 185000 },
+                { name: 'Producto D', value: 155000 }
+            ];
+            
+            const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+            
+            const totales2025 = monthlyData.reduce((sum, d) => sum + d['2025'], 0);
+            const totales2026 = monthlyData.reduce((sum, d) => sum + d['2026'], 0);
+            const crecimiento = (((totales2026 - totales2025) / totales2025) * 100).toFixed(1);
+            
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('es-EC', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(value);
+            };
+            
+            const handleDragStart = (cardId, e) => {
+                setDragState({ id: cardId, startX: e.clientX, startY: e.clientY });
+            };
+            
+            const handleDragMove = (e) => {
+                if (!dragState) return;
+                const deltaX = e.clientX - dragState.startX;
+                const deltaY = e.clientY - dragState.startY;
+                
+                setCardPositions(prev => ({
+                    ...prev,
+                    [dragState.id]: {
+                        x: (prev[dragState.id]?.x || 0) + deltaX,
+                        y: (prev[dragState.id]?.y || 0) + deltaY
+                    }
+                }));
+                
+                setDragState({ ...dragState, startX: e.clientX, startY: e.clientY });
+            };
+            
+            const handleDragEnd = () => {
+                setDragState(null);
+            };
+            
+            const resetPositions = () => {
+                setCardPositions({
+                    metrics: { x: 0, y: 0 },
+                    comparativo: { x: 0, y: 0 },
+                    crecimiento: { x: 0, y: 0 },
+                    distribucion: { x: 0, y: 0 }
+                });
+            };
+            
+            React.useEffect(() => {
+                document.addEventListener('mousemove', handleDragMove);
+                document.addEventListener('mouseup', handleDragEnd);
+                return () => {
+                    document.removeEventListener('mousemove', handleDragMove);
+                    document.removeEventListener('mouseup', handleDragEnd);
+                };
+            }, [dragState]);
+            
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>Cartera de Ventas 2025-2026</h1>
+                        <p>Análisis comparativo de desempeño y proyecciones</p>
+                    </div>
+                    
+                    <div className="controls">
+                        <button 
+                            className={`btn ${selectedView === 'overview' ? 'active' : ''}`}
+                            onClick={() => setSelectedView('overview')}>
+                            Vista General
+                        </button>
+                        <button 
+                            className={`btn ${selectedView === 'detalle' ? 'active' : ''}`}
+                            onClick={() => setSelectedView('detalle')}>
+                            Análisis por Producto
+                        </button>
+                        <button className="btn reset" onClick={resetPositions}>
+                            ↺ Reiniciar posiciones
+                        </button>
+                    </div>
+                    
+                    {selectedView === 'overview' && (
+                        <>
+                            <div className="metrics-grid">
+                                <div 
+                                    className="metric-card"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart('metrics', e)}
+                                    style={{ transform: `translate(${cardPositions.metrics.x}px, ${cardPositions.metrics.y}px)` }}>
+                                    <div className="metric-label">Total 2026</div>
+                                    <div className="metric-value primary">{formatCurrency(totales2026)}</div>
+                                </div>
+                                
+                                <div 
+                                    className="metric-card"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart('comparativo', e)}
+                                    style={{ transform: `translate(${cardPositions.comparativo.x}px, ${cardPositions.comparativo.y}px)` }}>
+                                    <div className="metric-label">Total 2025</div>
+                                    <div className="metric-value secondary">{formatCurrency(totales2025)}</div>
+                                </div>
+                                
+                                <div 
+                                    className="metric-card success"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart('crecimiento', e)}
+                                    style={{ transform: `translate(${cardPositions.crecimiento.x}px, ${cardPositions.crecimiento.y}px)` }}>
+                                    <div className="metric-label">Crecimiento</div>
+                                    <div className="metric-value success">+{crecimiento}%</div>
+                                </div>
+                                
+                                <div 
+                                    className="metric-card"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart('distribucion', e)}
+                                    style={{ transform: `translate(${cardPositions.distribucion.x}px, ${cardPositions.distribucion.y}px)` }}>
+                                    <div className="metric-label">Promedio Mensual</div>
+                                    <div className="metric-value primary">{formatCurrency(totales2026 / monthlyData.length)}</div>
+                                </div>
+                            </div>
+                            
+                            <div className="chart-card">
+                                <h2>Tendencia de ventas por mes</h2>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <ComposedChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="mes" />
+                                        <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
+                                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                                        <Legend />
+                                        <Line type="monotone" dataKey="2025" stroke="#6b7280" strokeWidth={2} />
+                                        <Line type="monotone" dataKey="2026" stroke="#3b82f6" strokeWidth={3} />
+                                        <Area type="monotone" dataKey="meta" fill="#10b981" stroke="#10b981" opacity={0.1} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            </div>
+                            
+                            <div className="chart-card">
+                                <h2>Comparativo mensual 2025 vs 2026</h2>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="mes" />
+                                        <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
+                                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                                        <Legend />
+                                        <Bar dataKey="2025" fill="#9ca3af" />
+                                        <Bar dataKey="2026" fill="#3b82f6" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </>
+                    )}
+                    
+                    {selectedView === 'detalle' && (
+                        <>
+                            <div className="grid-2">
+                                <div className="chart-card">
+                                    <h2>Ventas por producto</h2>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={productosData} layout="vertical" margin={{ top: 5, right: 30, left: 150, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
+                                            <YAxis dataKey="producto" type="category" width={140} />
+                                            <Tooltip formatter={(value) => formatCurrency(value)} />
+                                            <Legend />
+                                            <Bar dataKey="2025" fill="#d1d5db" />
+                                            <Bar dataKey="2026" fill="#10b981" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                
+                                <div className="chart-card">
+                                    <h2>Distribución de ventas 2026</h2>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie data={distribucionData} cx="50%" cy="50%" labelLine={false} 
+                                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                outerRadius={80} fill="#8884d8" dataKey="value">
+                                                {distribucionData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value) => formatCurrency(value)} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                            
+                            <div className="chart-card table-responsive">
+                                <h2>Detalle por producto</h2>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>2025</th>
+                                            <th>2026</th>
+                                            <th>Crecimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {productosData.map((row, idx) => {
+                                            const growth = (((row['2026'] - row['2025']) / row['2025']) * 100).toFixed(1);
+                                            return (
+                                                <tr key={idx}>
+                                                    <td>{row.producto}</td>
+                                                    <td>{formatCurrency(row['2025'])}</td>
+                                                    <td style={{ fontWeight: '600' }}>{formatCurrency(row['2026'])}</td>
+                                                    <td style={{ color: '#16a34a' }}>+{growth}%</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        };
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DashboardCartera />);
+    </script>
+</body>
+</html>
